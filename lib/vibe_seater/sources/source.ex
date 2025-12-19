@@ -9,7 +9,7 @@ defmodule VibeSeater.Sources.Source do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @source_types ~w(twitter github discord reddit tiktok rss custom)
+  @source_types ~w(twitter github discord reddit tiktok facebook rss custom)
 
   schema "sources" do
     field(:name, :string)
@@ -44,6 +44,7 @@ defmodule VibeSeater.Sources.Source do
       "twitter" -> validate_twitter_config(changeset)
       "github" -> validate_github_config(changeset)
       "tiktok" -> validate_tiktok_config(changeset)
+      "facebook" -> validate_facebook_config(changeset)
       _ -> changeset
     end
   end
@@ -75,6 +76,21 @@ defmodule VibeSeater.Sources.Source do
       changeset
     else
       add_error(changeset, :config, "must include either hashtag or username for TikTok sources")
+    end
+  end
+
+  defp validate_facebook_config(changeset) do
+    config = get_field(changeset, :config, %{})
+
+    if Map.has_key?(config, "page_id") or Map.has_key?(config, "group_id") or
+         Map.has_key?(config, "hashtag") do
+      changeset
+    else
+      add_error(
+        changeset,
+        :config,
+        "must include either page_id, group_id, or hashtag for Facebook sources"
+      )
     end
   end
 end
