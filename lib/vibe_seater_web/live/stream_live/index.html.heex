@@ -1,0 +1,77 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Vibe Seater</h1>
+    <p class="mt-2 text-gray-600">
+      Multi-dimensional stream overlays with persistent digital traces
+    </p>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <div>
+        <h2 class="text-lg font-medium text-gray-900">Streams</h2>
+        <p class="mt-1 text-sm text-gray-500">
+          Live streams with synchronized multi-source overlays
+        </p>
+      </div>
+    </div>
+
+    <%= if @streams == [] do %>
+      <div class="px-4 py-12 text-center">
+        <svg
+          class="mx-auto h-12 w-12 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No streams</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by creating a new stream.</p>
+      </div>
+    <% else %>
+      <ul role="list" class="divide-y divide-gray-200">
+        <%= for stream <- @streams do %>
+          <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+            <div class="flex items-center justify-between">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-3">
+                  <span class={[
+                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                    status_color(stream.status)
+                  ]}>
+                    {stream.status}
+                  </span>
+                  <p class="text-sm font-medium text-gray-900 truncate">
+                    {stream.title}
+                  </p>
+                </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                  <span class="truncate">{stream.stream_type} • {stream.stream_url}</span>
+                </div>
+                <%= if stream.started_at do %>
+                  <div class="mt-1 text-xs text-gray-400">
+                    Started: {Calendar.strftime(stream.started_at, "%Y-%m-%d %H:%M:%S UTC")}
+                  </div>
+                <% end %>
+              </div>
+              <div class="ml-4 flex-shrink-0">
+                <.link
+                  navigate={~p"/streams/#{stream.id}"}
+                  class="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  View
+                </.link>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>
