@@ -45,6 +45,7 @@ defmodule VibeSeater.Sources.Source do
       "github" -> validate_github_config(changeset)
       "tiktok" -> validate_tiktok_config(changeset)
       "facebook" -> validate_facebook_config(changeset)
+      "rss" -> validate_rss_config(changeset)
       _ -> changeset
     end
   end
@@ -92,5 +93,37 @@ defmodule VibeSeater.Sources.Source do
         "must include either page_id, group_id, or hashtag for Facebook sources"
       )
     end
+  end
+
+  defp validate_rss_config(changeset) do
+    config = get_field(changeset, :config, %{})
+    source_url = get_field(changeset, :source_url)
+
+    cond do
+      # source_url is the primary field for RSS feeds
+      source_url && String.length(source_url) > 0 ->
+        validate_url(changeset, :source_url)
+
+      # Allow feed_url in config as alternative
+      Map.has_key?(config, "feed_url") ->
+        changeset
+
+      true ->
+        add_error(changeset, :source_url, "must include feed URL for RSS sources")
+    end
+  end
+
+  defp validate_url(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      uri = URI.parse(value)
+
+      case uri do
+        %URI{scheme: scheme, host: host} when scheme in ["http", "https"] and not is_nil(host) ->
+          []
+
+        _ ->
+          [{field, "must be a valid URL"}]
+      end
+    end)
   end
 end
