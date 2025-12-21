@@ -9,7 +9,7 @@ defmodule VibeSeater.Events.Event do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @event_types ~w(tweet github_commit github_issue discord_message reddit_comment tiktok_video rss_item custom)
+  @event_types ~w(tweet github_commit github_issue discord_message reddit_comment tiktok_video facebook_post rss_item custom)
 
   schema "events" do
     field(:event_type, :string)
