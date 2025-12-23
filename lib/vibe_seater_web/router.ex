@@ -19,6 +19,7 @@ defmodule VibeSeaterWeb.Router do
 
     live "/", StreamLive.Index, :index
     live "/streams", StreamLive.Index, :index
+    live "/streams/:id", StreamLive.Show, :show
   end
 
   # Other scopes may use custom stacks.
