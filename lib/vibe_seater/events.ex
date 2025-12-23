@@ -24,11 +24,67 @@ defmodule VibeSeater.Events do
 
   @doc """
   Creates an event.
+
+  Broadcasts the event to PubSub for real-time updates and emits telemetry.
   """
   def create_event(attrs \\ %{}) do
-    %Event{}
-    |> Event.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Event{}
+      |> Event.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, event} ->
+        # Broadcast to PubSub for real-time updates
+        broadcast_event(event)
+
+        # Emit telemetry
+        emit_event_telemetry(event)
+
+        {:ok, event}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Creates multiple events in a batch for efficiency.
+
+  Returns `{:ok, count}` with the number of events inserted.
+  """
+  def create_events_batch(events_attrs) when is_list(events_attrs) do
+    # Prepare changesets
+    changesets =
+      Enum.map(events_attrs, fn attrs ->
+        Event.changeset(%Event{}, attrs)
+      end)
+
+    # Filter valid changesets
+    valid_changesets = Enum.filter(changesets, & &1.valid?)
+
+    # Insert all at once
+    timestamp = DateTime.utc_now()
+
+    entries =
+      Enum.map(valid_changesets, fn changeset ->
+        changeset
+        |> Ecto.Changeset.apply_changes()
+        |> Map.from_struct()
+        |> Map.drop([:__meta__])
+        |> Map.put(:inserted_at, timestamp)
+      end)
+
+    {count, _} = Repo.insert_all(Event, entries)
+
+    # Emit telemetry for batch
+    :telemetry.execute(
+      [:vibe_seater, :events, :batch_created],
+      %{count: count},
+      %{}
+    )
+
+    {:ok, count}
   end
 
   @doc """
@@ -117,5 +173,33 @@ defmodule VibeSeater.Events do
       event_count: count(e.id)
     })
     |> Repo.all()
+  end
+
+  ## Private Functions
+
+  defp broadcast_event(%Event{} = event) do
+    # Broadcast to stream-specific topic
+    Phoenix.PubSub.broadcast(
+      VibeSeater.PubSub,
+      "stream:#{event.stream_id}",
+      {:new_event, event}
+    )
+
+    # Broadcast to source-specific topic
+    Phoenix.PubSub.broadcast(
+      VibeSeater.PubSub,
+      "source:#{event.source_id}",
+      {:new_event, event}
+    )
+
+    :ok
+  end
+
+  defp emit_event_telemetry(%Event{} = event) do
+    :telemetry.execute(
+      [:vibe_seater, :events, :created],
+      %{count: 1},
+      %{event_type: event.event_type, stream_id: event.stream_id, source_id: event.source_id}
+    )
   end
 end

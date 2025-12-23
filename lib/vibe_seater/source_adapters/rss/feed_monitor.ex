@@ -93,8 +93,11 @@ defmodule VibeSeater.SourceAdapters.RSS.FeedMonitor do
   # Private Functions
 
   defp calculate_poll_interval(config) do
-    config
-    |> Map.get("poll_interval_seconds", 60)
+    # Get poll interval in seconds, default to 60 seconds
+    interval_seconds = Map.get(config, "poll_interval_seconds", div(@default_poll_interval, 1000))
+
+    # Convert to milliseconds and enforce minimum
+    interval_seconds
     |> then(&(&1 * 1000))
     |> max(@min_poll_interval)
   end

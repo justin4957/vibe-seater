@@ -7,6 +7,7 @@ defmodule VibeSeater.Streaming do
   alias VibeSeater.Repo
   alias VibeSeater.Streaming.{Stream, StreamSource}
   alias VibeSeater.Sources.Source
+  alias VibeSeater.Ingestion.StreamCoordinator
 
   @doc """
   Returns the list of streams.
@@ -57,21 +58,49 @@ defmodule VibeSeater.Streaming do
 
   @doc """
   Starts a stream, setting its status to active and recording the start time.
+
+  Also starts the ingestion pipeline for this stream by launching workers
+  for all attached sources.
   """
   def start_stream(%Stream{} = stream) do
-    update_stream(stream, %{
-      status: "active",
-      started_at: DateTime.utc_now()
-    })
+    with {:ok, updated_stream} <-
+           update_stream(stream, %{
+             status: "active",
+             started_at: DateTime.utc_now()
+           }),
+         {:ok, _worker_pids} <- StreamCoordinator.start_stream(stream.id) do
+      {:ok, updated_stream}
+    end
   end
 
   @doc """
   Stops a stream, setting its status to completed and recording the end time.
+
+  Also stops the ingestion pipeline by terminating all workers for this stream.
   """
   def stop_stream(%Stream{} = stream) do
+    # Stop workers first
+    :ok = StreamCoordinator.stop_stream(stream.id)
+
+    # Then update database
     update_stream(stream, %{
       status: "completed",
       ended_at: DateTime.utc_now()
+    })
+  end
+
+  @doc """
+  Pauses a stream, setting its status to paused.
+
+  Workers are stopped but can be resumed later without losing configuration.
+  """
+  def pause_stream(%Stream{} = stream) do
+    # Pause workers first
+    :ok = StreamCoordinator.pause_stream(stream.id)
+
+    # Then update database
+    update_stream(stream, %{
+      status: "paused"
     })
   end
 
