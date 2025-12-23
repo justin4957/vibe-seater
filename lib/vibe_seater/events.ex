@@ -175,6 +175,62 @@ defmodule VibeSeater.Events do
     |> Repo.all()
   end
 
+  @doc """
+  Gets events for a stream within the last N seconds.
+  Useful for calculating event rates.
+  """
+  def get_recent_events(%Stream{} = stream, seconds) when is_integer(seconds) do
+    cutoff = DateTime.add(DateTime.utc_now(), -seconds, :second)
+
+    Event
+    |> where([e], e.stream_id == ^stream.id)
+    |> where([e], e.occurred_at >= ^cutoff)
+    |> order_by([e], desc: e.occurred_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Calculates the event rate for a stream over a time window.
+  Returns events per second.
+  """
+  def calculate_event_rate(%Stream{} = stream, window_seconds \\ 60) do
+    recent_events = get_recent_events(stream, window_seconds)
+    count = length(recent_events)
+
+    if count > 0 do
+      Float.round(count / window_seconds, 2)
+    else
+      0.0
+    end
+  end
+
+  @doc """
+  Gets comprehensive real-time statistics for a stream.
+  """
+  def get_realtime_statistics(%Stream{} = stream) do
+    total_count = count_events_for_stream(stream)
+    recent_count = length(get_recent_events(stream, 60))
+    event_rate = calculate_event_rate(stream, 60)
+
+    by_source = get_stream_statistics(stream)
+
+    # Get last event time
+    last_event =
+      Event
+      |> where([e], e.stream_id == ^stream.id)
+      |> order_by([e], desc: e.occurred_at)
+      |> limit(1)
+      |> Repo.one()
+
+    %{
+      total_events: total_count,
+      recent_events: recent_count,
+      event_rate: event_rate,
+      last_event_at: if(last_event, do: last_event.occurred_at, else: nil),
+      by_source: by_source
+    }
+  end
+
   ## Private Functions
 
   defp broadcast_event(%Event{} = event) do
