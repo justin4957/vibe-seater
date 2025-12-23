@@ -12,8 +12,9 @@ defmodule VibeSeater.Application do
       VibeSeater.Repo,
       {DNSCluster, query: Application.get_env(:vibe_seater, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: VibeSeater.PubSub},
-      # Start a worker by calling: VibeSeater.Worker.start_link(arg)
-      # {VibeSeater.Worker, arg},
+      # Ingestion pipeline
+      VibeSeater.Ingestion.SourceWorkerSupervisor,
+      VibeSeater.Ingestion.StreamCoordinator,
       # Start to serve requests, typically the last entry
       VibeSeaterWeb.Endpoint
     ]
