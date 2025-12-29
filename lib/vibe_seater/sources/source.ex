@@ -53,10 +53,15 @@ defmodule VibeSeater.Sources.Source do
   defp validate_twitter_config(changeset) do
     config = get_field(changeset, :config, %{})
 
-    if Map.has_key?(config, "hashtag") or Map.has_key?(config, "username") do
+    if Map.has_key?(config, "hashtag") or Map.has_key?(config, "username") or
+         Map.has_key?(config, "keywords") or Map.has_key?(config, "type") do
       changeset
     else
-      add_error(changeset, :config, "must include either hashtag or username for Twitter sources")
+      add_error(
+        changeset,
+        :config,
+        "must include hashtag, username, keywords, or type for Twitter sources"
+      )
     end
   end
 

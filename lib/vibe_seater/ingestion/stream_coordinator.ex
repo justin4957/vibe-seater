@@ -304,6 +304,7 @@ defmodule VibeSeater.Ingestion.StreamCoordinator do
 
   defp get_worker_module("rss"), do: VibeSeater.SourceAdapters.RSS.FeedMonitor
   defp get_worker_module("facebook"), do: VibeSeater.SourceAdapters.Facebook.BotMonitor
+  defp get_worker_module("twitter"), do: VibeSeater.SourceAdapters.Twitter.StreamMonitor
 
   defp get_worker_module(source_type) do
     Logger.warning("No worker module configured for source type: #{source_type}")
